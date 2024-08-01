@@ -1,11 +1,12 @@
+/* eslint-disable import/no-unresolved */
+/* eslint-disable no-undef */
+/* eslint-disable perfectionist/sort-imports */
+/* eslint-disable consistent-return */
 import { useState } from 'react';
 
 import Box from '@mui/material/Box';
-import Link from '@mui/material/Link';
 import Card from '@mui/material/Card';
 import Stack from '@mui/material/Stack';
-import Button from '@mui/material/Button';
-import Divider from '@mui/material/Divider';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
@@ -19,6 +20,9 @@ import { bgGradient } from 'src/theme/css';
 
 import Logo from 'src/components/logo';
 import Iconify from 'src/components/iconify';
+import { ApiService } from 'src/service/ApiService';
+import { UrlService } from 'src/service/UrlService';
+import { useAuthStore } from 'src/store/user-store';
 
 // ----------------------------------------------------------------------
 
@@ -26,17 +30,45 @@ export default function LoginView() {
   const theme = useTheme();
 
   const router = useRouter();
+  const apiService = new ApiService()
+  const urlService = new UrlService()
+  const setUser = useAuthStore(state => state.setUser)
+  const [isLoading, setIsLoading] = useState(false)
 
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleClick = () => {
-    router.push('/dashboard');
+  const handleClick = async() => {
+    try {
+      setIsLoading(true)
+      const sending = await apiService.post(urlService.endpoint.base, urlService.endpoint.path.login, {}, credential)
+      setUser(sending.data.data, sending.data.token)
+      setIsLoading(false)
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 2000)
+    } catch (error) {
+      return error
+    }
   };
+
+  const [credential, setCredential] = useState({
+    email: '',
+    password: ''
+  })
 
   const renderForm = (
     <>
       <Stack spacing={3}>
-        <TextField name="email" label="Email address" />
+        <TextField name="email" label="Email address" 
+          type='email'
+          onChange={(event) => {
+            setCredential((prevState) => ({
+              ...prevState,
+              email: event.target.value
+            }))
+          }}
+          value={credential.email}
+        />
 
         <TextField
           name="password"
@@ -51,14 +83,15 @@ export default function LoginView() {
               </InputAdornment>
             ),
           }}
+          onChange={(event) => {
+            setCredential((prevState) => ({
+              ...prevState,
+              password: event.target.value
+            }))
+          }}
         />
       </Stack>
 
-      <Stack direction="row" alignItems="center" justifyContent="flex-end" sx={{ my: 3 }}>
-        <Link variant="subtitle2" underline="hover">
-          Forgot password?
-        </Link>
-      </Stack>
 
       <LoadingButton
         fullWidth
@@ -67,6 +100,8 @@ export default function LoginView() {
         variant="contained"
         color="inherit"
         onClick={handleClick}
+        sx={{ marginTop: 2 }}
+        loading={isLoading}
       >
         Login
       </LoadingButton>
@@ -99,52 +134,7 @@ export default function LoginView() {
             maxWidth: 420,
           }}
         >
-          <Typography variant="h4">Sign in to Minimal</Typography>
-
-          <Typography variant="body2" sx={{ mt: 2, mb: 5 }}>
-            Don’t have an account?
-            <Link variant="subtitle2" sx={{ ml: 0.5 }}>
-              Get started
-            </Link>
-          </Typography>
-
-          <Stack direction="row" spacing={2}>
-            <Button
-              fullWidth
-              size="large"
-              color="inherit"
-              variant="outlined"
-              sx={{ borderColor: alpha(theme.palette.grey[500], 0.16) }}
-            >
-              <Iconify icon="eva:google-fill" color="#DF3E30" />
-            </Button>
-
-            <Button
-              fullWidth
-              size="large"
-              color="inherit"
-              variant="outlined"
-              sx={{ borderColor: alpha(theme.palette.grey[500], 0.16) }}
-            >
-              <Iconify icon="eva:facebook-fill" color="#1877F2" />
-            </Button>
-
-            <Button
-              fullWidth
-              size="large"
-              color="inherit"
-              variant="outlined"
-              sx={{ borderColor: alpha(theme.palette.grey[500], 0.16) }}
-            >
-              <Iconify icon="eva:twitter-fill" color="#1C9CEA" />
-            </Button>
-          </Stack>
-
-          <Divider sx={{ my: 3 }}>
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              OR
-            </Typography>
-          </Divider>
+          <Typography variant="h4" sx={{ marginBottom: 2 }}>Sign in to Minimal</Typography>
 
           {renderForm}
         </Card>
